@@ -2,6 +2,7 @@
 #include <vector>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 
@@ -49,6 +50,9 @@ int main (int argc, char *argv[]) {
         else if (!ClientPid) {
             // child
             close(ServerSocket);
+            char AddressBuffer[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &ClientAddress.sin_addr, AddressBuffer, sizeof(AddressBuffer));
+            printf("[+] Client connected: %s:%u (pid=%d)\n", AddressBuffer, ntohs(ClientAddress.sin_port), ClientPid);
             uint8_t EchoByte;
             while (true) {
                 int32_t res = recv(ClientSocket, &EchoByte, 1, 0);
@@ -57,7 +61,7 @@ int main (int argc, char *argv[]) {
                     close(ClientSocket);
                     _exit(-1);
                 } else if (!res) {
-                    printf("Client disconnected\n");
+                    printf("[*] Client disconnected: %s:%u (pid=%d)\n", AddressBuffer, ntohs(ClientAddress.sin_port), ClientPid);
                     close(ClientSocket);
                     _exit(0);
                 }
