@@ -11,7 +11,7 @@ constexpr uint16_t ServerPort = 54321;
 
 int main (int argc, char *argv[]) {
 
-    int32_t ServerSocket = socket(AF_INET, SOCK_DGRAM, 0);
+    int32_t ServerSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (ServerSocket < 0) {
         perror("socket");
         return -1;
@@ -22,29 +22,52 @@ int main (int argc, char *argv[]) {
     ServerAddress.sin_port = htons(ServerPort);
     if (bind(ServerSocket, (struct sockaddr*)&ServerAddress, sizeof(ServerAddress)) < 0) {
         perror("bind");
+        close(ServerSocket);
         return -1;
     }
-    printf("Listening on UDP port %hu...\n", ServerPort);
-    struct sockaddr_in ClientAddress;
-    socklen_t ClientAddressLen = sizeof(ClientAddress);
-    int32_t res;
-    uint8_t* EchoBuffer = new uint8_t[65536];
-    size_t EchoBufferSize = 65536;
-
-    while(true) {
-        res = recvfrom(ServerSocket, EchoBuffer, EchoBufferSize, 0, ( struct sockaddr* ) &ClientAddress, &ClientAddressLen);
-        if (res < 0) {
-            perror("recvfrom");
-            break;
+    if (listen(ServerSocket, ServerBacklog) < 0) {
+        perror("listen");
+        close(ServerSocket);
+        return -1;
+    }
+    printf("Listening on TCP port %hu...\n", ServerPort);
+    while (true) {
+        struct sockaddr_in ClientAddress{};
+        socklen_t ClientAddressLen = sizeof(ClientAddress);
+        int32_t ClientSocket = accept(ServerSocket, (struct sockaddr*)&ClientAddress, &ClientAddressLen);
+        if (ClientSocket < 0) {
+            perror("accept");
+            close(ServerSocket);
+            return -1;
         }
-        if (sendto(ServerSocket, EchoBuffer, res, 0, ( struct sockaddr* )&ClientAddress, ClientAddressLen) < 0) {
-            perror("sendto");
-            break;
+        pid_t ClientPid = fork();
+        if (ClientPid < 0) {
+            perror("fork");
+            close(ServerSocket);
+            return -1;
+        }
+        else if (!ClientPid) {
+            // child
+            close(ServerSocket);
+            uint8_t EchoByte;
+            while (true) {
+                int32_t res = recv(ClientSocket, &EchoByte, 1, 0);
+                if (res < 0) {
+                    perror("recv");
+                    close(ClientSocket);
+                    _exit(-1);
+                } else if (!res) {
+                    printf("Client disconnected\n");
+                    close(ClientSocket);
+                    _exit(0);
+                }
+                write(ClientSocket, &EchoByte, 1);
+            }
+        }
+        else {
+            close(ClientSocket);
         }
     }
 
-    close(ServerSocket);
-    delete[] EchoBuffer;
-    EchoBuffer = nullptr;
     return 0;
 }
