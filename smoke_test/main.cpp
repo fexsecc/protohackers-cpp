@@ -7,12 +7,9 @@
 
 constexpr size_t ServerBacklog = 50;
 constexpr uint16_t ServerPort = 54321;
-constexpr size_t TimeoutSeconds = 10;
 
 
 int main (int argc, char *argv[]) {
-    // DoS Protection!!
-    alarm(5);
 
     int32_t ServerSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (ServerSocket < 0) {
