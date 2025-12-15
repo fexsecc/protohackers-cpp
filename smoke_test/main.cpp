@@ -25,8 +25,8 @@ int main (int argc, char *argv[]) {
         return -1;
     }
     printf("Listening on UDP port %hu...\n", ServerPort);
-    socklen_t ClientAddressLen;
     struct sockaddr_in ClientAddress;
+    socklen_t ClientAddressLen = sizeof(ClientAddress);
     int32_t res;
     uint8_t* EchoBuffer = new uint8_t[65536];
     size_t EchoBufferSize = 65536;
