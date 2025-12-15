@@ -52,7 +52,7 @@ int main (int argc, char *argv[]) {
             close(ServerSocket);
             char AddressBuffer[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &ClientAddress.sin_addr, AddressBuffer, sizeof(AddressBuffer));
-            printf("[+] Client connected: %s:%u (pid=%d)\n", AddressBuffer, ntohs(ClientAddress.sin_port), ClientPid);
+            printf("[+] Client connected: %s:%u (pid=%d)\n", AddressBuffer, ntohs(ClientAddress.sin_port), getpid());
             uint8_t EchoByte;
             while (true) {
                 int32_t res = recv(ClientSocket, &EchoByte, 1, 0);
@@ -61,7 +61,7 @@ int main (int argc, char *argv[]) {
                     close(ClientSocket);
                     _exit(-1);
                 } else if (!res) {
-                    printf("[*] Client disconnected: %s:%u (pid=%d)\n", AddressBuffer, ntohs(ClientAddress.sin_port), ClientPid);
+                    printf("[*] Client disconnected: %s:%u (pid=%d)\n", AddressBuffer, ntohs(ClientAddress.sin_port), getpid());
                     close(ClientSocket);
                     _exit(0);
                 }
