@@ -1,5 +1,10 @@
+CC=g++
+CFLAGS=-g -Wall -Wextra
+CHALL=smoke_test
+
 all:
-	g++ -o main main.cpp -g
+	mkdir -p ../build ../build/$(CHALL)
+	$(CC) $(CFLAGS) -o ../build/$(CHALL)/main main.cpp
 
 clean:
-	rm -f main
+	rm -f ../build/$(CHALL)/main
