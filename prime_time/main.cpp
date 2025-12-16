@@ -138,7 +138,8 @@ int main (int argc, char *argv[]) {
 
                         nlohmann::json JsonResponse;
                         JsonResponse["method"] = "isPrime";
-                        if (JsonRequest["number"].type() == nlohmann::json::value_t::number_float) {
+                        if (JsonRequest["number"].type() == nlohmann::json::value_t::number_float ||
+                            JsonRequest["number"] < 2) {
                             JsonResponse["prime"] = false;
                             std::string Payload = JsonResponse.dump();
                             dprintf(ClientSocket, "%s\n", Payload.c_str());
