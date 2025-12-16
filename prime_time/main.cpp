@@ -126,14 +126,16 @@ int main (int argc, char *argv[]) {
                         std::cout << JsonRequest << std::endl;
                         if (!JsonRequest.contains("method") || !JsonRequest.contains("number") || JsonRequest["method"] != "isPrime") {
                             dprintf(ClientSocket, "Invalid Prime Time format\n");
-                            _exit(-1);
+                            RequestBuffer.clear();
+                            continue;
                         }
                         if (JsonRequest["number"].type() != nlohmann::json::value_t::number_integer &&
                             JsonRequest["number"].type() != nlohmann::json::value_t::number_unsigned &&
                             JsonRequest["number"].type() != nlohmann::json::value_t::number_float
                         ) {
                             dprintf(ClientSocket, "Invalid number\n");
-                            _exit(-1);
+                            RequestBuffer.clear();
+                            continue;
                         }
 
                         nlohmann::json JsonResponse;
@@ -143,33 +145,38 @@ int main (int argc, char *argv[]) {
                             JsonResponse["prime"] = false;
                             std::string Payload = JsonResponse.dump();
                             dprintf(ClientSocket, "%s\n", Payload.c_str());
-                            _exit(0);
+                            RequestBuffer.clear();
+                            continue;
                         }
                         MillerRabinTest PrimeTest;
                         if (PrimeTest.isPrime64(JsonRequest["number"])) {
                             JsonResponse["prime"] = true;
                             std::string Payload = JsonResponse.dump();
                             dprintf(ClientSocket, "%s\n", Payload.c_str());
-                            _exit(0);
+                            RequestBuffer.clear();
+                            continue;
                         } else {
                             JsonResponse["prime"] = false;
                             std::string Payload = JsonResponse.dump();
                             dprintf(ClientSocket, "%s\n", Payload.c_str());
-                            _exit(0);
+                            RequestBuffer.clear();
+                            continue;
                         }
                     } catch (nlohmann::json::parse_error& ex) {
                         std::cerr << "JsonRequest parsing error at byte " << ex.byte << std::endl;
                         dprintf(ClientSocket, "Invalid JSON\n");
-                        _exit(-1);
+                        RequestBuffer.clear();
+                        continue;
                     }
                     catch (...) {
                         std::cerr << "Unknown exception occurred\n";
                         dprintf(ClientSocket, "Unknown error\n");
-                        _exit(-1);
+                        RequestBuffer.clear();
+                        continue;
                     }
-                    _exit(0);
+                } else {
+                    RequestBuffer.push_back(EchoByte);
                 }
-                RequestBuffer.push_back(EchoByte);
             }
         }
         else {
