@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <string>
 #include <nlohmann/json.hpp>
 #include <sys/socket.h>
 #include <sys/wait.h>
@@ -7,12 +8,59 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
-#include <signal.h>
+#include <cstdint>
+#include <inttypes.h>
 
 
 constexpr size_t ServerBacklog = 50;
 constexpr uint16_t ServerPort = 54321;
 
+
+class MillerRabinTest {
+    // modular multiply (avoid overflow) using __int128
+    static uint64_t modmul(uint64_t a, uint64_t b, uint64_t m) {
+        return (unsigned __int128)a * b % m;
+    }
+    
+    static uint64_t modpow(uint64_t a, uint64_t d, uint64_t m) {
+        uint64_t res = 1;
+        while (d) {
+            if (d & 1) res = modmul(res, a, m);
+            a = modmul(a, a, m);
+            d >>= 1;
+        }
+        return res;
+    }
+    
+public:
+    bool isPrime64(uint64_t n) {
+        if (n < 2) return false;
+        static const uint64_t small_primes[] = {2,3,5,7,11,13,17,19,23,29,31,37};
+        for (uint64_t p : small_primes) {
+            if (n == p) return true;
+            if (n % p == 0) return false;
+        }
+        // write n-1 as d * 2^s
+        uint64_t d = n - 1;
+        int s = 0;
+        while ((d & 1) == 0) { d >>= 1; ++s; }
+    
+        // Deterministic bases for 64-bit integers
+        uint64_t bases[] = {2ULL, 3ULL, 5ULL, 7ULL, 11ULL, 13ULL, 17ULL, 19ULL, 23ULL};
+        for (uint64_t a : bases) {
+            if (a % n == 0) continue;
+            uint64_t x = modpow(a, d, n);
+            if (x == 1 || x == n - 1) continue;
+            bool composite = true;
+            for (int r = 1; r < s; ++r) {
+                x = modmul(x, x, n);
+                if (x == n - 1) { composite = false; break; }
+            }
+            if (composite) return false;
+        }
+        return true;
+    }
+};
 
 int main (int argc, char *argv[]) {
     int32_t ServerSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -87,6 +135,27 @@ int main (int argc, char *argv[]) {
                             dprintf(ClientSocket, "Invalid number\n");
                             _exit(-1);
                         }
+
+                        nlohmann::json JsonResponse;
+                        JsonResponse["method"] = "isPrime";
+                        if (JsonRequest["number"].type() == nlohmann::json::value_t::number_float) {
+                            JsonResponse["prime"] = false;
+                            std::string Payload = JsonResponse.dump();
+                            dprintf(ClientSocket, "%s\n", Payload.c_str());
+                            _exit(0);
+                        }
+                        MillerRabinTest PrimeTest;
+                        if (PrimeTest.isPrime64(JsonRequest["number"])) {
+                            JsonResponse["prime"] = true;
+                            std::string Payload = JsonResponse.dump();
+                            dprintf(ClientSocket, "%s\n", Payload.c_str());
+                            _exit(0);
+                        } else {
+                            JsonResponse["prime"] = false;
+                            std::string Payload = JsonResponse.dump();
+                            dprintf(ClientSocket, "%s\n", Payload.c_str());
+                            _exit(0);
+                        }
                     } catch (nlohmann::json::parse_error& ex) {
                         std::cerr << "JsonRequest parsing error at byte " << ex.byte << std::endl;
                         dprintf(ClientSocket, "Invalid JSON\n");
@@ -97,10 +166,6 @@ int main (int argc, char *argv[]) {
                         dprintf(ClientSocket, "Unknown error\n");
                         _exit(-1);
                     }
-
-                    // TODO: Check number primality and return JSON response
-                    
-
                     _exit(0);
                 }
                 RequestBuffer.push_back(EchoByte);
