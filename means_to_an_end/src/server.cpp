@@ -42,6 +42,9 @@ int run(const char* address, const uint16_t port) {
     }
     std::println("[*] Listening for connections...");
 
+    // TODO: Learn about and use epoll and create a
+    //       thread worker class to track state
+
     return EXIT_SUCCESS;
 }
 
