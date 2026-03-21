@@ -1,10 +1,11 @@
+module;
 // Includes go up here, to not conflict with modules
-// #include <expected>
+#include <stdint.h>
 
 export module Server;
 
 export namespace Server {
 
-int serve();
+int run(const char* address, const uint16_t port);
 
 }
