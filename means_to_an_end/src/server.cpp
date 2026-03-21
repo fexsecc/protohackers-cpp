@@ -1,13 +1,15 @@
 module;
 
 #include <print>
+#include <cstdlib>
 
-module server;
+module Server;
 
-namespace server {
+namespace Server {
 
-void serve() {
+int serve() {
     std::println("Serving");
+    return EXIT_SUCCESS;
 }
 
 }

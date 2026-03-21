@@ -1,6 +1,6 @@
 #include <print>
 #include <string>
-import server;
+import Server;
 
 int main(int argc, char** argv) {
     const char* server_address;
@@ -24,9 +24,6 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
     }
-
-    std::println("[*] Binding to {}:{}", server_address, server_port);
-    server::serve();
-
-    return EXIT_SUCCESS;
+    std::println("[*] Binding to {}:{}...", server_address, server_port);
+    return Server::serve();
 }

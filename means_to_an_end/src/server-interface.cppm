@@ -1,5 +1,10 @@
-export module server;
+// Includes go up here, to not conflict with modules
+// #include <expected>
 
-export namespace server {
-void serve();
+export module Server;
+
+export namespace Server {
+
+int serve();
+
 }
