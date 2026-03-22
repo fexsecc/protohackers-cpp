@@ -74,15 +74,22 @@ void Server::HandleConnection(int client_fd) {
                 perror("recv");
                 return;
             }
+            std::println("[Thread {}] Received {} bytes from client", std::this_thread::get_id(), ret);
             count += ret;
+            //std::printf("%X (%c)\n", *((uint8_t*)(&msg+count)), *((uint8_t*)(&msg+count)));
+            //std::println("[Thread {}] Current byte count: {}\n", std::this_thread::get_id(), count);
         }
         // Ignore unknown message types
-        if (msg.Type != 'Q' && msg.Type != 'I')
+        if (msg.Type != 'I' && msg.Type != 'Q')
             continue;
         // Convert our ints to host byte order
         msg.timestamp = ntohl(msg.timestamp);
         msg.price = ntohl(msg.price);
-        // Save price and continue
+        std::println("[Thread {}] Got stock_msg: .Type={}, .timestamp={}, .price={}", std::this_thread::get_id(),
+                     msg.Type,
+                     msg.timestamp,
+                     msg.price);
+        // If 'I' Save price and continue
         if (msg.Type == 'I') {
             prices.push_back(msg);
         }
