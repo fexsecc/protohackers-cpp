@@ -9,9 +9,7 @@ module;
 
 module Server;
 
-namespace Server {
-
-int init(const char* address, const uint16_t port) {
+int Server::init(const char* address, const uint16_t port) {
     // Create socket object
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -61,12 +59,15 @@ int init(const char* address, const uint16_t port) {
         return EXIT_FAILURE;
     }
 
-    // TODO: Learn about and use epoll and create a
-    //       thread worker class to track state
-
+    _Address = address;
+    _Port = port;
+    _ServerSocket = sock;
     return EXIT_SUCCESS;
 }
 
+int Server::start() {
+
+    return EXIT_SUCCESS;
 }
 
 
