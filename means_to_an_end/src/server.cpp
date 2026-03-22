@@ -39,17 +39,15 @@ int Server::init(const char* address, const uint16_t port) {
         perror("listen");
         return EXIT_FAILURE;
     }
-    std::println("[*] Listening for connections...");
 
-
-    // Create epoll structure from kernel
+    // Create an epoll structure in the kernel
     int epfd = epoll_create1(0);
     if (epfd < 0) {
         perror("epoll_create1");
         return EXIT_FAILURE;
     }
     // Populate the interest list with our listening socket
-    // waiting for
+    // waiting for EPOLLIN events (receiving data)
     epoll_event event{};
     event.events = EPOLLIN;
     event.data.fd = sock;
@@ -66,6 +64,12 @@ int Server::init(const char* address, const uint16_t port) {
 }
 
 int Server::start() {
+    if (_ServerSocket == -1) {
+        std::println("No socket has been found. Did you call init?");
+        return EXIT_FAILURE;
+    }
+    std::println("[*] Listening for connections...");
+
 
     return EXIT_SUCCESS;
 }

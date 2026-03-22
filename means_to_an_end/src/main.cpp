@@ -29,4 +29,5 @@ int main(int argc, char** argv) {
     Server server;
     if (server.init(server_address, server_port) == EXIT_FAILURE)
         return EXIT_FAILURE;
+    return server.start();
 }
