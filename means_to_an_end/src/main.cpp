@@ -26,5 +26,7 @@ int main(int argc, char** argv) {
         }
     }
     std::println("[*] Binding to {}:{}...", server_address, server_port);
-    Server::run(server_address, server_port);
+    Server server;
+    if (server.init(server_address, server_port) == EXIT_FAILURE)
+        return EXIT_FAILURE;
 }

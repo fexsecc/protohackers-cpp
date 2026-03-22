@@ -4,8 +4,11 @@ module;
 
 export module Server;
 
-export namespace Server {
+export class Server {
+    char* _Address;
+    uint16_t _Port;
+    int _ServerSocket;
+public:
+    int init(const char* address, const uint16_t port);
+};
 
-int run(const char* address, const uint16_t port);
-
-}

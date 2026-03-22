@@ -5,12 +5,13 @@ module;
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/epoll.h>
 
 module Server;
 
 namespace Server {
 
-int run(const char* address, const uint16_t port) {
+int init(const char* address, const uint16_t port) {
     // Create socket object
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
@@ -41,6 +42,24 @@ int run(const char* address, const uint16_t port) {
         return EXIT_FAILURE;
     }
     std::println("[*] Listening for connections...");
+
+
+    // Create epoll structure from kernel
+    int epfd = epoll_create1(0);
+    if (epfd < 0) {
+        perror("epoll_create1");
+        return EXIT_FAILURE;
+    }
+    // Populate the interest list with our listening socket
+    // waiting for
+    epoll_event event{};
+    event.events = EPOLLIN;
+    event.data.fd = sock;
+
+    if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock, &event) < 0) {
+        perror("epoll_ctl");
+        return EXIT_FAILURE;
+    }
 
     // TODO: Learn about and use epoll and create a
     //       thread worker class to track state
