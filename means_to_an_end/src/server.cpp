@@ -17,7 +17,15 @@ int Server::init(const char* address, const uint16_t port) {
         perror("socket");
         return EXIT_FAILURE;
     }
-
+    const int enable = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        perror("setsockopt(SO_REUSEADDR)");
+        return EXIT_FAILURE;
+    }
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &enable, sizeof(int)) < 0) {
+        perror("setsockopt(SO_REUSEPORT)");
+        return EXIT_FAILURE;
+    }
     // Format address properly
     sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET;
@@ -47,6 +55,13 @@ int Server::init(const char* address, const uint16_t port) {
     return EXIT_SUCCESS;
 }
 
+void Server::HandleConnection(int client_fd) {
+    while(true) {
+        stock_msg msg;
+        int count = recv(client_fd, &msg, sizeof(msg), 0);
+    }
+}
+
 int Server::start() {
     if (_ServerSocket == -1) {
         std::println("No socket has been found. Did you call init?");
@@ -64,6 +79,9 @@ int Server::start() {
         char src_addr[40] = {};
         inet_ntop(AF_INET, &client_addr.sin_addr.s_addr, src_addr, sizeof(src_addr));
         std::println("[+] Connection received from {}", src_addr);
+        // Service connection with thread
+        std::thread conn(&Server::HandleConnection, this, client_sock);
+        conn.detach();
     }
 
     return EXIT_SUCCESS;
