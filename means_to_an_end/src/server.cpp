@@ -7,6 +7,7 @@ module;
 #include <arpa/inet.h>
 #include <sys/epoll.h>
 #include <thread>
+#include <vector>
 
 module Server;
 
@@ -56,9 +57,54 @@ int Server::init(const char* address, const uint16_t port) {
 }
 
 void Server::HandleConnection(int client_fd) {
+    std::vector<stock_msg> prices;
     while(true) {
         stock_msg msg;
-        int count = recv(client_fd, &msg, sizeof(msg), 0);
+        int count = 0;
+        while (count < sizeof(msg)) {
+            int ret = recv(client_fd, &msg, sizeof(msg) - count, 0);
+            // Client closed connection
+            if (!ret)
+                return;
+            // An error occurred
+            if (ret < 0) {
+                perror("recv");
+                return;
+            }
+            count += ret;
+        }
+        // Ignore unknown message types
+        if (msg.Type != 'Q' && msg.Type != 'I')
+            return;
+        // Convert our ints to host byte order
+        msg.timestamp = ntohl(msg.timestamp);
+        msg.price = ntohl(msg.price);
+        // Save price and continue
+        if (msg.Type == 'I') {
+            prices.push_back(msg);
+        }
+        // Compute mean for 'Q' (query)
+        else {
+            // A best attempt for now at not overflowing
+            int64_t mean;
+            if (msg.mintime > msg.maxtime) {
+                mean = 0;
+            }
+            else {
+                int32_t in_window_cnt = 0;
+                for (auto& price : prices) {
+                    if (price.timestamp >= msg.mintime && price.timestamp <= msg.maxtime) {
+                        mean += price.price;
+                        in_window_cnt += 1;
+                    }
+                }
+                if (in_window_cnt)
+                    mean /= in_window_cnt;
+                mean = (int32_t)mean;
+            }
+            int32_t res = htonl(mean);
+            send(client_fd, &res, sizeof(int32_t), 0);
+        }
     }
 }
 
