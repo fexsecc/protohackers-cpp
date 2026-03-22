@@ -41,23 +41,6 @@ int Server::init(const char* address, const uint16_t port) {
         return EXIT_FAILURE;
     }
 
-    // Create an epoll structure in the kernel
-    int epfd = epoll_create1(0);
-    if (epfd < 0) {
-        perror("epoll_create1");
-        return EXIT_FAILURE;
-    }
-    // Populate the interest list with our listening socket
-    // waiting for EPOLLIN events (receiving data)
-    epoll_event event{};
-    event.events = EPOLLIN;
-    event.data.fd = sock;
-
-    if (epoll_ctl(epfd, EPOLL_CTL_ADD, sock, &event) < 0) {
-        perror("epoll_ctl");
-        return EXIT_FAILURE;
-    }
-
     _Address = address;
     _Port = port;
     _ServerSocket = sock;
@@ -69,7 +52,19 @@ int Server::start() {
         std::println("No socket has been found. Did you call init?");
         return EXIT_FAILURE;
     }
-    std::println("[*] Listening for connections...");
+    std::println("[*] Accepting connections");
+    while (true) {
+        struct sockaddr_in client_addr{};
+        socklen_t client_addr_len = sizeof(client_addr);
+        int client_sock = accept(_ServerSocket, (struct sockaddr*)&client_addr, &client_addr_len);
+        if (client_sock < 0) {
+            perror("accept");
+            return EXIT_FAILURE;
+        }
+        char src_addr[40] = {};
+        inet_ntop(AF_INET, &client_addr.sin_addr.s_addr, src_addr, sizeof(src_addr));
+        std::println("[+] Connection received from {}", src_addr);
+    }
 
     return EXIT_SUCCESS;
 }
