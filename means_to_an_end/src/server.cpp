@@ -6,6 +6,7 @@ module;
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/epoll.h>
+#include <thread>
 
 module Server;
 
@@ -69,7 +70,6 @@ int Server::start() {
         return EXIT_FAILURE;
     }
     std::println("[*] Listening for connections...");
-
 
     return EXIT_SUCCESS;
 }
