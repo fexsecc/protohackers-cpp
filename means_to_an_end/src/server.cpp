@@ -61,11 +61,14 @@ void Server::HandleConnection(int client_fd) {
     while(true) {
         stock_msg msg;
         int count = 0;
+        // Make sure we read 9 bytes
         while (count < sizeof(msg)) {
             int ret = recv(client_fd, &msg, sizeof(msg) - count, 0);
             // Client closed connection
-            if (!ret)
+            if (!ret) {
+                std::println("[*] Client closed connection");
                 return;
+            }
             // An error occurred
             if (ret < 0) {
                 perror("recv");
@@ -75,7 +78,7 @@ void Server::HandleConnection(int client_fd) {
         }
         // Ignore unknown message types
         if (msg.Type != 'Q' && msg.Type != 'I')
-            return;
+            continue;
         // Convert our ints to host byte order
         msg.timestamp = ntohl(msg.timestamp);
         msg.price = ntohl(msg.price);
