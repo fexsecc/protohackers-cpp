@@ -17,7 +17,7 @@ public:
 
 // an unpacked 9 byte struct representing the message
 export typedef struct {
-    uint8_t Type;
+    char Type;
     union {
         int32_t timestamp;
         int32_t mintime;

@@ -63,15 +63,17 @@ void Server::HandleConnection(int client_fd) {
         int count = 0;
         // Make sure we read 9 bytes
         while (count < sizeof(msg)) {
-            int ret = recv(client_fd, &msg, sizeof(msg) - count, 0);
+            int ret = recv(client_fd, (uint8_t*)(&msg) + count, sizeof(msg) - count, 0);
             // Client closed connection
             if (!ret) {
                 std::println("[*] Client closed connection");
+                close(client_fd);
                 return;
             }
             // An error occurred
             if (ret < 0) {
                 perror("recv");
+                close(client_fd);
                 return;
             }
             std::println("[Thread {}] Received {} bytes from client", std::this_thread::get_id(), ret);
@@ -79,9 +81,7 @@ void Server::HandleConnection(int client_fd) {
             //std::printf("%X (%c)\n", *((uint8_t*)(&msg+count)), *((uint8_t*)(&msg+count)));
             //std::println("[Thread {}] Current byte count: {}\n", std::this_thread::get_id(), count);
         }
-        // Ignore unknown message types
-        if (msg.Type != 'I' && msg.Type != 'Q')
-            continue;
+
         // Convert our ints to host byte order
         msg.timestamp = ntohl(msg.timestamp);
         msg.price = ntohl(msg.price);
@@ -89,6 +89,10 @@ void Server::HandleConnection(int client_fd) {
                      msg.Type,
                      msg.timestamp,
                      msg.price);
+
+        // Ignore unknown message types
+        if (msg.Type != 'I' && msg.Type != 'Q')
+            continue;
         // If 'I' Save price and continue
         if (msg.Type == 'I') {
             prices.push_back(msg);
@@ -96,14 +100,16 @@ void Server::HandleConnection(int client_fd) {
         // Compute mean for 'Q' (query)
         else {
             // A best attempt for now at not overflowing
-            int64_t mean;
-            if (msg.mintime > msg.maxtime) {
-                mean = 0;
+            int64_t mean{};
+            // If the range doesn't make sense or there are no prices, return 0
+            if (msg.mintime > msg.maxtime || !prices.size()) {
+                mean = {};
             }
             else {
                 int32_t in_window_cnt = 0;
                 for (auto& price : prices) {
                     if (price.timestamp >= msg.mintime && price.timestamp <= msg.maxtime) {
+                        std::println("Adding price {} to mean", price.price);
                         mean += price.price;
                         in_window_cnt += 1;
                     }
